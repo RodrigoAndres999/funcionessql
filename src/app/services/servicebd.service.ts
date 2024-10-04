@@ -58,6 +58,7 @@ export class ServicebdService {
         this.database = bd;
         //llamar a la creación de tablas
         this.crearTablas();
+        this.selectNoticias();
         //modificar el estado de mi base de datos
         this.isDbReady.next(true);
       }).catch(e=>{
@@ -77,5 +78,52 @@ export class ServicebdService {
     }
   }
 
+  selectNoticias(){
+    return this.database.executeSql('SELECT * FROM noticia',[]).then(res=>{
+      //variable para almacenar el resultado del select
+      let items: Noticias[] = [];
+      //validar si trae registros
+      if(res.rows.length > 0){
+        //recorro el cursor para guardar los datos
+        for(var i = 0; i < res.rows.length; i++){
+          //agrego elementoa elemento en mi arreglo
+          items.push({
+            idnoticia: res.rows.item(i).idnoticia,
+            titulo: res.rows.item(i).titulo,
+            texto: res.rows.item(i).texto
+          })
+        }
+      }
+      //actualizo el observable
+      this.listaNoticias.next(items as any);
+    })
+  }
+
+  actualizarNoticia(id:string, titulo: string, texto: string){
+    return this.database.executeSql('UPDATE noticia SET titulo = ?, texto = ? WHERE idnoticia = ?',[titulo,texto,id]).then(res=>{
+      this.presentAlert("Modificar","Noticia ha sido modificada");
+      this.selectNoticias();
+    }).catch(e=>{
+      this.presentAlert('Modificar','Error: ' + JSON.stringify(e));
+    })
+  }
+
+  insertarNoticia(titulo:string, texto: string){
+    return this.database.executeSql('INSERT INTO noticia(titulo, texto) VALUES (?,?)',[titulo,texto]).then(res=>{
+      this.presentAlert("Insertar","Noticia Ingresada");
+      this.selectNoticias();
+    }).catch(e=>{
+      this.presentAlert('Insertar','Error: ' + JSON.stringify(e));
+    })
+  }
+
+  eliminarNoticia(id:string){
+    this.database.executeSql('DELETE FROM noticia WHERE idnoticia = ?',[id]).then(res=>{
+      this.presentAlert("Eliminar","Noticia Eliminada");
+      this.selectNoticias();
+    }).catch(e=>{
+      this.presentAlert('Eliminar','Error: ' + JSON.stringify(e));
+    })
+  }
 
 }
